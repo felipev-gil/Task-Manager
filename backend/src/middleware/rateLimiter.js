@@ -10,10 +10,8 @@ const rateLimiter = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    console.error("Rate limit middleware error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error during rate limiting." });
+    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
