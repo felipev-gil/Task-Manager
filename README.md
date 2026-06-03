@@ -4,9 +4,9 @@ A full-stack MERN task management application with authentication, drag-and-drop
 
 ## Live Demo
 
-Frontend: https://task-manager-8mbx.vercel.app/
+Frontend: https://task-manager-felipev-gil.vercel.app/
 
-Backend API: https://task-manager-pb69.onrender.com
+Backend API: https://task-manager-pb69.onrender.com/
 
 ## Features
 
