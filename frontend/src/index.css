@@ -1,2 +1,5 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes:
+    lofi --default, emerald, valentine, dracula, dim, forest;
+}

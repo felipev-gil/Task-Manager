@@ -1,73 +1,121 @@
-# P-MERN Starter
+# Task Manager
 
-## Description
+A full-stack MERN task management application with authentication, drag-and-drop task organization, archiving, pagination, search, rate limiting, and automated testing.
 
-This is a basic MERN or PERN stack starter template using Vite.
+## Features
 
-## Dependencies
+- User authentication with JWT
+- Protected routes
+- Create, update, delete, and archive tasks
+- Kanban board workflow
+- Drag-and-drop task management
+- Archived tasks page
+- Search functionality
+- Pagination
+- Rate limiting
+- Global error handling
+- Backend testing with Jest and Supertest
 
-1. **Backend**
-   - Express.
-   - Nodemon.
-   - Cors.
-   - Dotenv.
-   - Upstash.
-   - Jsonwebtoken.
-   - Bcryptjs.
+## Tech Stack
 
-2. **Frontend**
-   - Axios.
-   - React Router.
-   - Lucide React.
-   - TailwindCSS.
-   - Daisyui.
-   - React Hot Toast.
-   - Sweetalert2.
+### Frontend
+
+- React
+- Vite
+- React Router
+- Axios
+- Tailwind CSS
+- DaisyUI
+- @hello-pangea/dnd
+- React Hot Toast
+- SweetAlert2
+- Lucide React
+
+### Backend
+
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT
+- BcryptJS
+- Express Validator
+- Upstash Rate Limiting
+
+### Testing
+
+- Jest
+- Supertest
 
 ## Installation
 
-1. **Clone the repository**:
+### Clone Repository
 
-   ```
-   git clone https://github.com/felipev-gil/P-MERN-Starter.git
-   ```
+```bash
+git clone https://github.com/felipev-gil/Task-Manager.git
+cd task-manager
+```
 
-2. **Dependencies**:
+### Backend
 
-   Go to the frontend folder and run the following command.
+```bash
+cd backend
+pnpm install
+```
 
-   ```
-   cd ./frontend
-   npm install
-   ```
+Create a `.env` file and fill the required information:
 
-   Go to the backend folder and run the following command.
+```env
+Server config:
+PORT=
+CORS_ORIGIN=
 
-   ```
-   cd ./backend
-   npm install
-   ```
+Database connection:
+MONGO_URI=
 
-3. **Additional Configuration**:
-   - Choose your database system and install the necessary dependencies.
-   - Set up your environment variables by creating or modifying the .env files in the frontend and backend.
-   - Ensure your database connection is configured correctly in the .env file according to your database setup.
-   - Create the folders that are mentioned in each README.md
+Upstash connection:
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 
-## Usage
+Jwt password:
+JWT_SECRET=
+```
 
-1. **Start the app**
+Run backend:
 
-   Go to the frontend folder and run the following command.
+```bash
+pnpm run dev
+```
 
-   ```
-   cd ./frontend
-   npm run dev
-   ```
+### Frontend
 
-   Go to the backend folder and run the following command.
+```bash
+cd frontend
+pnpm install
+```
 
-   ```
-   cd ./backend
-   npm run dev
-   ```
+Create a `.env` file and fill the required information:
+
+```env
+Api:
+VITE_API_URL=
+```
+
+Run frontend:
+
+```bash
+pnpm run dev
+```
+
+## Running Tests
+
+Backend tests are implemented using Jest and Supertest.
+
+```bash
+cd backend
+pnpm test
+```
+
+## License
+
+MIT

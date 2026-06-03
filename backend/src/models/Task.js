@@ -6,10 +6,13 @@ const taskSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxLength: 50,
     },
     content: {
       type: String,
       required: true,
+      trim: true,
+      maxLength: 300,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +40,12 @@ const taskSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+taskSchema.index({
+  user: 1,
+  archived: 1,
+  createdAt: -1,
+});
 
 const Task = mongoose.model("Task", taskSchema);
 
