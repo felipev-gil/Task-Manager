@@ -116,6 +116,21 @@ cd backend
 pnpm test
 ```
 
+## Deployment
+
+Frontend:
+- Vercel
+
+Backend:
+- Render
+
+Database:
+- MongoDB Atlas
+
+Continuous Deployment:
+- GitHub Integration
+- Automatic redeployments on push
+
 ## License
 
 MIT
