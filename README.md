@@ -127,10 +127,6 @@ Backend:
 Database:
 - MongoDB Atlas
 
-Continuous Deployment:
-- GitHub Integration
-- Automatic redeployments on push
-
 ## License
 
 MIT
