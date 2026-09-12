@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
-    <div className="flex items-center justify-center w-full pt-50">
-      <div className="bg-secondary-content p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
+    <div className="flex items-center justify-center w-full px-3 py-12 sm:py-24">
+      <div className="bg-secondary-content p-4 sm:p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
         <h2 className="text-2xl mb-6 text-base-content font-semibold">
           Welcome!
         </h2>

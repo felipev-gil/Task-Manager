@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoaderIcon } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
+import ApiFailure from "./components/system/ApiFailure";
 import NavBar from "./components/system/NavBar";
 import Home from "./pages/system/Home";
 import Login from "./pages/auth/Login";
@@ -14,18 +15,30 @@ import NotFound from "./pages/system/NotFound";
 import Footer from "./components/system/Footer";
 
 const AppContent = () => {
-  const { user, loading, error } = useAuth();
+  const { user, loading, error, retry, handleLogout } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoaderIcon className="animate-spin size-10" />
+        <span role="status">
+          <LoaderIcon aria-hidden="true" className="animate-spin size-10" />
+          <span className="sr-only">Loading…</span>
+        </span>
       </div>
     );
   }
 
   if (!user && !loading && error) {
-    return <div className="p-4 text-error">{error}</div>;
+    return (
+      <main className="p-4">
+        <ApiFailure message={error} onRetry={retry} />
+        <div className="text-center">
+          <button className="btn btn-ghost" onClick={handleLogout}>
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (

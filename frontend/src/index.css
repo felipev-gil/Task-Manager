@@ -1,5 +1,15 @@
 @import "tailwindcss";
 @plugin "daisyui" {
   themes:
-    lofi --default, emerald, valentine, dracula, dim, forest;
+    lofi --default,
+    emerald,
+    valentine,
+    dracula,
+    dim,
+    forest;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-primary) !important;
+  outline-offset: 3px;
 }

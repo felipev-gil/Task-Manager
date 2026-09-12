@@ -1,4 +1,32 @@
-import { body } from "express-validator";
+import { body, query } from "express-validator";
+
+export const stateValidation = [
+  body("state")
+    .custom(
+      (value) =>
+        typeof value === "string" &&
+        ["Pending", "In Progress", "Completed"].includes(value),
+    )
+    .withMessage(
+      "State is required and must be Pending, In Progress, or Completed.",
+    ),
+];
+
+export const archiveValidation = [
+  body("archived")
+    .custom((value) => typeof value === "boolean")
+    .withMessage("Archived is required and must be a boolean (true or false)."),
+];
+
+export const archivedSearchValidation = [
+  query("search")
+    .optional()
+    .isString()
+    .withMessage("Search must be text.")
+    .bail()
+    .isLength({ max: 100 })
+    .withMessage("Search must be at most 100 characters."),
+];
 
 export const createTaskValidation = [
   body("title")

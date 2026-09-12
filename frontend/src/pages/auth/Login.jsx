@@ -10,6 +10,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { saveUser, error: authError } = useAuth();
 
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -24,6 +25,8 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const userData = await authService.login(formData);
       saveUser(userData, userData.token);
@@ -31,12 +34,14 @@ const Login = () => {
       navigate("/tasks");
     } catch (error) {
       handleApiError(error, "Failed to log in");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="flex justify-center w-full pt-30">
-      <div className="bg-secondary-content p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
+    <div className="flex justify-center w-full px-3 py-8">
+      <div className="bg-secondary-content p-4 sm:p-8 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
         <Link
           to={"/"}
           className="btn flex-start btn-ghost mb-6 text-base-content"
@@ -46,7 +51,7 @@ const Login = () => {
         <p className="text-sm text-error py-4">{authError}</p>
         <div className="flex flex-col py-7">
           <form onSubmit={handleSubmit}>
-            <fieldset className="border border-primary rounded-lg p-6">
+            <fieldset className="border border-primary rounded-lg p-3 sm:p-6">
               <legend className="px-6 font-bold text-2xl">Sign In</legend>
 
               <div className="flex flex-col mb-6 space-y-1">
@@ -83,8 +88,11 @@ const Login = () => {
                 />
               </div>
 
-              <button className="w-full btn btn-primary btn-lg mt-5">
-                Login
+              <button
+                disabled={isSaving}
+                className="w-full btn btn-primary btn-lg mt-5"
+              >
+                {isSaving ? "Please wait…" : "Login"}
               </button>
             </fieldset>
           </form>

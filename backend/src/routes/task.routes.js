@@ -3,6 +3,9 @@ import { authRequired } from "../middlewares/auth.js";
 import {
   createTaskValidation,
   updateTaskValidation,
+  stateValidation,
+  archiveValidation,
+  archivedSearchValidation,
 } from "../validators/task.validator.js";
 import { taskIdValidation } from "../validators/id.validator.js";
 import { validate } from "../validators/validateRequest.js";
@@ -20,7 +23,13 @@ import {
 const router = express.Router();
 
 router.get("/", authRequired, validate, getTasks);
-router.get("/archived", authRequired, validate, getTasksArchived);
+router.get(
+  "/archived",
+  authRequired,
+  archivedSearchValidation,
+  validate,
+  getTasksArchived,
+);
 router.get("/:id", authRequired, taskIdValidation, validate, getTaskById);
 router.post("/", authRequired, createTaskValidation, validate, createTask);
 router.put(
@@ -35,6 +44,7 @@ router.patch(
   "/:id/state",
   authRequired,
   taskIdValidation,
+  stateValidation,
   validate,
   updateTaskState,
 );
@@ -42,6 +52,7 @@ router.patch(
   "/:id/archive",
   authRequired,
   taskIdValidation,
+  archiveValidation,
   validate,
   archiveTask,
 );

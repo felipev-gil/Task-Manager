@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useTaskCollection } from "../../hooks/useTasks";
 import { useTaskBoard } from "../../hooks/useTaskBoard";
+import ApiFailure from "../../components/system/ApiFailure";
 import RateLimitedUi from "../../components/system/RateLimitedUi";
 import TasksNotFound from "../../components/tasks/TasksNotFound";
 
@@ -13,6 +14,9 @@ const Tasks = () => {
 
   const {
     tasks,
+    error,
+    retry,
+    pendingIds,
     isLoading,
     isRateLimited,
     deleteTask,
@@ -59,14 +63,19 @@ const Tasks = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <LoaderIcon className="animate-spin size-10" />
+        <span role="status">
+          <LoaderIcon aria-hidden="true" className="animate-spin size-10" />
+          <span className="sr-only">Loading…</span>
+        </span>
       </div>
     );
   }
 
   if (isRateLimited) {
-    return <RateLimitedUi />;
+    return <RateLimitedUi onRetry={retry} />;
   }
+
+  if (error) return <ApiFailure message={error} onRetry={retry} />;
 
   if (visibleTasks.length === 0) {
     return <TasksNotFound />;
@@ -74,8 +83,8 @@ const Tasks = () => {
 
   return (
     <div className="flex justify-center w-full">
-      <div className="max-w-7xl w-full p-12">
-        <div className="flex justify-between mb-10">
+      <div className="max-w-7xl w-full p-4 sm:p-8 lg:p-12">
+        <div className="flex flex-wrap items-center gap-4 justify-between mb-8">
           <h1 className="text-primary text-4xl font-bold">Task Board</h1>
           <div>
             <Link to="/create" className="btn btn-primary">
@@ -101,7 +110,7 @@ const Tasks = () => {
                     {...provided.droppableProps}
                     className={`
                       p-5
-                      min-h-160
+                      min-h-48 xl:min-h-160
                       border
                       border-primary
                       rounded-3xl
@@ -132,7 +141,10 @@ const Tasks = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              onClick={() => navigate(`/task/${task._id}`)}
+                              onClick={(event) => {
+                                if (!event.target.closest("a, button"))
+                                  navigate(`/task/${task._id}`);
+                              }}
                               className={`
                                   p-5
                                   border
@@ -145,36 +157,50 @@ const Tasks = () => {
                                   ${snapshot.isDragging ? "rotate-1 shadow-2xl" : ""}
                                 `}
                             >
-                              <div className="flex justify-between items-center">
-                                <h3 className="font-semibold">{task.title}</h3>
+                              <div className="flex flex-wrap gap-2 justify-between items-center">
+                                <h3 className="font-semibold min-w-0 break-words">
+                                  <Link
+                                    className="no-underline"
+                                    to={`/task/${task._id}`}
+                                  >
+                                    {task.title}
+                                  </Link>
+                                </h3>
 
                                 <div className="flex flex-row">
                                   <button
                                     type="button"
+                                    disabled={pendingIds.includes(task._id)}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleArchive(e, task._id);
                                     }}
                                     aria-label="Archive task"
-                                    className="btn btn-xs btn-ghost hover:bg-primary-content/20"
+                                    className="btn btn-sm btn-ghost hover:bg-primary-content/20"
                                   >
                                     <ArchiveX className="size-4" />
                                   </button>
 
                                   <button
                                     type="button"
+                                    disabled={pendingIds.includes(task._id)}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDelete(e, task._id);
                                     }}
                                     aria-label="Delete task"
-                                    className="btn btn-xs btn-ghost hover:bg-primary-content/20"
+                                    className="btn btn-sm btn-ghost hover:bg-primary-content/20"
                                   >
                                     <Trash2 className="size-4" />
                                   </button>
                                 </div>
                               </div>
-                              <p>{task.content}</p>
+                              <p className="break-words whitespace-pre-wrap">
+                                {task.content}
+                              </p>
+                              <span className="sr-only">
+                                {task.priority} priority
+                              </span>
                             </div>
                           )}
                         </Draggable>

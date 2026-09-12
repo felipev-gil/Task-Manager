@@ -14,7 +14,10 @@ export const getTasks = asyncHandler(async (req, res) => {
 export const getTasksArchived = asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
-  const search = req.query.search?.trim() || "";
+  const search = (req.query.search?.trim() || "").replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
 
   const query = {
     user: req.user.id,
@@ -29,19 +32,18 @@ export const getTasksArchived = asyncHandler(async (req, res) => {
     ],
   };
 
-  const [tasks, total] = await Promise.all([
-    Task.find(query)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
-
-    Task.countDocuments(query),
-  ]);
+  const total = await Task.countDocuments(query);
+  const totalPages = Math.max(Math.ceil(total / limit), 1);
+  const currentPage = Math.min(page, totalPages);
+  const tasks = await Task.find(query)
+    .skip((currentPage - 1) * limit)
+    .limit(limit)
+    .sort({ createdAt: -1, _id: -1 });
 
   res.status(200).json({
     tasks,
-    currentPage: page,
-    totalPages: Math.max(Math.ceil(total / limit), 1),
+    currentPage,
+    totalPages,
     totalTasks: total,
   });
 });

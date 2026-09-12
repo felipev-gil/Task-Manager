@@ -9,6 +9,7 @@ import { handleApiError } from "../../utils/handleApiError";
 const Register = () => {
   const { saveUser, error: authError } = useAuth();
 
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -24,6 +25,8 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const userData = await authService.register(formData);
       saveUser(userData, userData.token);
@@ -31,12 +34,14 @@ const Register = () => {
       navigate("/");
     } catch (error) {
       handleApiError(error, "Registration failed");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="flex justify-center w-full pt-10">
-      <div className="bg-secondary-content p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
+    <div className="flex justify-center w-full px-3 py-8">
+      <div className="bg-secondary-content p-4 sm:p-8 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
         <Link
           to={"/"}
           className="btn flex-start btn-ghost mb-6 text-base-content"
@@ -46,7 +51,7 @@ const Register = () => {
         {authError && <p className="text-red-500 mb-4 text-sm">{authError}</p>}
         <div className="flex flex-col py-7">
           <form onSubmit={handleSubmit}>
-            <fieldset className="border border-primary rounded-lg p-6">
+            <fieldset className="border border-primary rounded-lg p-3 sm:p-6">
               <legend className="px-6 font-bold text-2xl">
                 Registration Information
               </legend>
@@ -119,8 +124,11 @@ const Register = () => {
                 />
               </div>
 
-              <button className="w-full btn btn-primary btn-lg mt-5">
-                Register
+              <button
+                disabled={isSaving}
+                className="w-full btn btn-primary btn-lg mt-5"
+              >
+                {isSaving ? "Please wait…" : "Register"}
               </button>
             </fieldset>
           </form>

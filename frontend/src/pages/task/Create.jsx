@@ -6,8 +6,8 @@ const Create = () => {
   const { task, updateField, saveTask, isSaving } = useTaskForm({});
 
   return (
-    <div className="flex justify-center w-full pt-15">
-      <div className="bg-secondary-content p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
+    <div className="flex justify-center w-full px-3 py-8">
+      <div className="bg-secondary-content p-4 sm:p-8 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
         <Link
           to="/tasks"
           className="btn flex-start btn-ghost mb-6 text-base-content"
@@ -23,7 +23,7 @@ const Create = () => {
               saveTask();
             }}
           >
-            <fieldset className="border border-primary rounded-lg p-6">
+            <fieldset className="border border-primary rounded-lg p-3 sm:p-6">
               <legend className="px-6 font-bold text-2xl">Create Task</legend>
 
               <div className="flex flex-col mb-6 space-y-1">
@@ -34,6 +34,8 @@ const Create = () => {
                 <input
                   id="task-title"
                   type="text"
+                  required
+                  maxLength={50}
                   value={task.title}
                   onChange={(e) => updateField("title", e.target.value)}
                   placeholder="Task Title"
@@ -47,6 +49,8 @@ const Create = () => {
                 </label>
 
                 <textarea
+                  required
+                  maxLength={300}
                   id="task-content"
                   value={task.content}
                   onChange={(e) => updateField("content", e.target.value)}

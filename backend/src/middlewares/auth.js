@@ -27,6 +27,13 @@ export const authRequired = async (req, res, next) => {
 
     next();
   } catch (error) {
+    if (
+      !["JsonWebTokenError", "TokenExpiredError", "NotBeforeError"].includes(
+        error.name,
+      )
+    ) {
+      return next(error);
+    }
     console.error("Token verification failed:", error.message);
     res
       .status(401)

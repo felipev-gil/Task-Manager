@@ -3,9 +3,9 @@ import ratelimit from "../config/upstash.js";
 const rateLimiter = async (req, res, next) => {
   let limiterKey;
 
-  if (req.user && req.user._id) {
-    limiterKey = `USER:${req.user._id}`;
-  } else if (typeof req.ip === "string" && req.ip) {
+  // This middleware runs before authentication: preserve the existing IP policy.
+  // Change proxy trust only after verifying the deployed forwarding chain.
+  if (typeof req.ip === "string" && req.ip) {
     limiterKey = `IP:${req.ip}`;
   } else {
     return res.status(403).json({ message: "Rate limiting key unavailable." });

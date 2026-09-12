@@ -1,73 +1,67 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import * as authService from "../services/auth.service";
-import { useApiState } from "../hooks/useApiState";
 
 const AuthContext = createContext(null);
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+// The context and its consumer hook intentionally live together.
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-
-  const { isLoading, setIsLoading, error, setError } = useApiState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const fetchInitialUser = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
+    let active = true;
+    const initialize = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const userData = await authService.getMe();
-
-        setUser(userData);
-
-        setError(null);
-      } catch {
-        setError("Session expired or failed to load user data.");
-
-        localStorage.removeItem("token");
-
-        setUser(null);
+        if (!localStorage.getItem("token")) return;
+        const data = await authService.getMe();
+        if (active) setUser(data);
+      } catch (error) {
+        if (!active) return;
+        if (error.response?.status === 401) {
+          localStorage.removeItem("token");
+          setUser(null);
+        } else {
+          setError(
+            error.response?.status === 429
+              ? "Too many requests. Please wait a moment, then retry."
+              : "We couldn't connect to load your session. Please try again.",
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (active) setLoading(false);
       }
     };
+    initialize();
+    return () => {
+      active = false;
+    };
+  }, [attempt]);
 
-    fetchInitialUser();
-  }, [setError, setIsLoading]);
-
-  const saveUser = (userData, token) => {
+  const saveUser = (data, token) => {
     localStorage.setItem("token", token);
-
-    setUser(userData);
-
+    setUser(data);
     setError(null);
   };
-
   const handleLogout = () => {
     localStorage.removeItem("token");
-
     setUser(null);
-
     setError(null);
   };
-
   return (
     <AuthContext.Provider
       value={{
         user,
-
-        loading: isLoading,
+        loading,
         error,
-
         saveUser,
         handleLogout,
+        retry: () => setAttempt((value) => value + 1),
       }}
     >
       {children}

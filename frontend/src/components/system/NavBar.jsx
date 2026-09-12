@@ -19,7 +19,12 @@ const NavBar = () => {
   };
 
   return (
-    <div className="drawer">
+    <div
+      className="drawer"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setDrawerOpen(false);
+      }}
+    >
       <input
         id="drawer"
         checked={drawerOpen}
@@ -31,7 +36,10 @@ const NavBar = () => {
       <div className="drawer-content flex flex-col">
         <div className="navbar bg-base-300 w-full">
           <div className="mx-2 flex-1 px-2">
-            <Link to="/tasks" className="text-4xl font-bold text-primary">
+            <Link
+              to="/tasks"
+              className="text-2xl sm:text-4xl font-bold text-primary"
+            >
               Task Manager
             </Link>
           </div>
@@ -74,16 +82,19 @@ const NavBar = () => {
           <div className="flex-none lg:hidden">
             <button
               id="openMenu"
+              aria-label="Toggle navigation"
+              aria-expanded={drawerOpen}
+              aria-controls="mobile-menu"
               onClick={() => setDrawerOpen((prev) => !prev)}
               className="btn btn-square btn-ghost"
             >
-              <Menu className="size-14 text-primary pt-2" />
+              <Menu className="size-7 text-primary" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="drawer-side">
+      <div id="mobile-menu" className="drawer-side z-50" inert={!drawerOpen}>
         <button
           id="drawerSide"
           className="drawer-overlay"
@@ -91,6 +102,17 @@ const NavBar = () => {
           onClick={() => setDrawerOpen(false)}
         />
         <ul className="menu bg-base-200 min-h-full w-67 p-4 pt-6">
+          <li>
+            <button
+              className="btn btn-ghost mb-3"
+              onClick={() => {
+                setDrawerOpen(false);
+                document.getElementById("openMenu").focus();
+              }}
+            >
+              Close menu
+            </button>
+          </li>
           <li className="text-2xl font-bold text-primary items-center">Menu</li>
           {user && (
             <>
