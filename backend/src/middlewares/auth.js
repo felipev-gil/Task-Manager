@@ -1,35 +1,29 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-
+import { sessionToken, clearSession } from "../config/session.js";
 export const authRequired = async (req, res, next) => {
-  let token;
-  if (
-    !req.headers.authorization ||
-    !req.headers.authorization.startsWith("Bearer")
-  ) {
+  const token = sessionToken(req);
+  if (!token)
+    return res.status(401).json({ message: "Please sign in to continue." });
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+  } catch {
+    clearSession(res);
     return res
       .status(401)
-      .json({ message: "Access denied. No token provided." });
+      .json({ message: "Your session expired. Please sign in again." });
   }
-
-  token = req.headers.authorization.split(" ")[1];
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     req.user = await User.findById(decoded.id).select("-password");
-
     if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "User associated with token not found." });
+      clearSession(res);
+      return res.status(401).json({ message: "Please sign in again." });
     }
-
     next();
   } catch (error) {
-    console.error("Token verification failed:", error.message);
-    res
-      .status(401)
-      .json({ message: "Not authorized, invalid or expired token." });
+    next(error);
   }
 };

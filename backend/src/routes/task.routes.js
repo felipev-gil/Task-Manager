@@ -1,8 +1,10 @@
 import express from "express";
-import { authRequired } from "../middlewares/auth.js";
 import {
   createTaskValidation,
   updateTaskValidation,
+  stateValidation,
+  archiveValidation,
+  archivedQueryValidation,
 } from "../validators/task.validator.js";
 import { taskIdValidation } from "../validators/id.validator.js";
 import { validate } from "../validators/validateRequest.js";
@@ -16,16 +18,13 @@ import {
   archiveTask,
   deleteTask,
 } from "../controllers/task.controller.js";
-
 const router = express.Router();
-
-router.get("/", authRequired, validate, getTasks);
-router.get("/archived", authRequired, validate, getTasksArchived);
-router.get("/:id", authRequired, taskIdValidation, validate, getTaskById);
-router.post("/", authRequired, createTaskValidation, validate, createTask);
+router.get("/", getTasks);
+router.get("/archived", archivedQueryValidation, validate, getTasksArchived);
+router.get("/:id", taskIdValidation, validate, getTaskById);
+router.post("/", createTaskValidation, validate, createTask);
 router.put(
   "/:id",
-  authRequired,
   taskIdValidation,
   updateTaskValidation,
   validate,
@@ -33,18 +32,17 @@ router.put(
 );
 router.patch(
   "/:id/state",
-  authRequired,
   taskIdValidation,
+  stateValidation,
   validate,
   updateTaskState,
 );
 router.patch(
   "/:id/archive",
-  authRequired,
   taskIdValidation,
+  archiveValidation,
   validate,
   archiveTask,
 );
-router.delete("/:id", authRequired, taskIdValidation, validate, deleteTask);
-
+router.delete("/:id", taskIdValidation, validate, deleteTask);
 export default router;

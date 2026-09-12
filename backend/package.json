@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "author": "Felipe Vanegas Gil (https://github.com/felipev-gil)",
   "license": "MIT",
-  "packageManager": "pnpm@11.1.1",
+  "packageManager": "pnpm@11.19.0",
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "demo": "node scripts/demo.js"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.8",
@@ -24,7 +25,11 @@
   },
   "devDependencies": {
     "jest": "^30.4.2",
+    "mongodb-memory-server": "^10.4.3",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

@@ -1,32 +1,38 @@
-import ratelimit from "../config/upstash.js";
-
-const rateLimiter = async (req, res, next) => {
-  let limiterKey;
-
-  if (req.user && req.user._id) {
-    limiterKey = `USER:${req.user._id}`;
-  } else if (typeof req.ip === "string" && req.ip) {
-    limiterKey = `IP:${req.ip}`;
-  } else {
-    return res.status(403).json({ message: "Rate limiting key unavailable." });
-  }
-
-  try {
-    const { success } = await ratelimit.limit(limiterKey);
-    if (!success) {
-      return res
-        .status(429)
-        .json({ message: "Too many requests, please try again later." });
+import { createStore } from "../config/upstash.js";
+export const createRateLimiter =
+  (store, scope = "API") =>
+  async (req, res, next) => {
+    const identity =
+      scope === "AUTH"
+        ? "IP:" + req.ip
+        : req.user?._id
+          ? "USER:" + req.user._id
+          : "IP:" + req.ip;
+    try {
+      const { success, reset } = await store.limit(scope + ":" + identity);
+      if (!success) {
+        res.set(
+          "Retry-After",
+          String(Math.max(1, Math.ceil((reset - Date.now()) / 1000))),
+        );
+        return res
+          .status(429)
+          .json({
+            message: "Too many requests. Please wait a minute and retry.",
+          });
+      }
+      next();
+    } catch (error) {
+      console.error("Rate-limit store unavailable:", error.message);
+      res
+        .status(503)
+        .json({ message: "Service temporarily unavailable. Please retry." });
     }
-    next();
-  } catch (error) {
-    console.error("Rate limit middleware error:", error);
-
-    res.status(503).json({
-      message:
-        "Service temporarily unavailable due to rate limiting backend issues.",
-    });
-  }
+  };
+let store;
+export const resetRateLimitStore = () => {
+  store = undefined;
 };
-
-export default rateLimiter;
+const lazyStore = { limit: (key) => (store ??= createStore()).limit(key) };
+export const authRateLimiter = createRateLimiter(lazyStore, "AUTH");
+export default createRateLimiter(lazyStore);

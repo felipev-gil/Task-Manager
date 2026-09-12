@@ -31,6 +31,7 @@ const taskSchema = new mongoose.Schema(
       default: "Pending",
       required: true,
     },
+    position: { type: Number, default: null, min: -1e15, max: 1e15 },
     archived: {
       type: Boolean,
       default: false,

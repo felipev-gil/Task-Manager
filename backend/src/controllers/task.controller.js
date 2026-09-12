@@ -8,13 +8,27 @@ export const getTasks = asyncHandler(async (req, res) => {
     archived: false,
   });
 
-  res.status(200).json(tasks);
+  // Stable virtual positions let pre-ordering records work without a destructive migration.
+  const ordered = [...tasks].sort((a, b) =>
+    String(a._id).localeCompare(String(b._id)),
+  );
+  res
+    .status(200)
+    .json(
+      ordered.map((task, index) => ({
+        ...task.toObject(),
+        position: task.position ?? task.createdAt.getTime() + index,
+      })),
+    );
 });
 
 export const getTasksArchived = asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
-  const search = req.query.search?.trim() || "";
+  const search = (req.query.search?.trim() || "").replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
 
   const query = {
     user: req.user.id,
@@ -29,19 +43,18 @@ export const getTasksArchived = asyncHandler(async (req, res) => {
     ],
   };
 
-  const [tasks, total] = await Promise.all([
-    Task.find(query)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
-
-    Task.countDocuments(query),
-  ]);
+  const total = await Task.countDocuments(query);
+  const totalPages = Math.max(Math.ceil(total / limit), 1);
+  const currentPage = Math.min(page, totalPages);
+  const tasks = await Task.find(query)
+    .skip((currentPage - 1) * limit)
+    .limit(limit)
+    .sort({ createdAt: -1, _id: -1 });
 
   res.status(200).json({
     tasks,
-    currentPage: page,
-    totalPages: Math.max(Math.ceil(total / limit), 1),
+    currentPage,
+    totalPages,
     totalTasks: total,
   });
 });
@@ -57,11 +70,13 @@ export const getTaskById = asyncHandler(async (req, res) => {
 });
 
 export const createTask = asyncHandler(async (req, res) => {
-  const { title, content, priority } = req.body;
+  const { title, content, priority, state } = req.body;
   const newTask = new Task({
     title,
     content,
     priority,
+    state,
+    position: Date.now(),
     user: req.user.id,
   });
   await newTask.save();
@@ -99,13 +114,13 @@ export const updateTask = asyncHandler(async (req, res) => {
 
 export const updateTaskState = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { state } = req.body;
+  const { state, position } = req.body;
   const updatedTask = await Task.findOneAndUpdate(
     {
       _id: id,
       user: req.user.id,
     },
-    { state },
+    { state, ...(position !== undefined ? { position } : {}) },
     { returnDocument: "after", runValidators: true },
   );
   if (!updatedTask) throw new ApiError(404, "Task not found");

@@ -1,117 +1,106 @@
-import request from "supertest";
-import app from "../app.js";
-
-describe("Task Routes", () => {
-  const createUserAndGetToken = async () => {
-    const email = `test${Date.now()}@test.com`;
-
-    const response = await request(app)
-      .post("/api/users/register")
-      .send({
-        name: "Test User",
-        username: `user${Date.now()}`,
-        email,
-        password: "12345678",
-      });
-
-    return response.body.token;
-  };
-
-  it("should return user tasks", async () => {
-    const token = await createUserAndGetToken();
-
-    await request(app)
-      .post("/api/tasks")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        title: "Task",
-        content: "Content",
-        priority: "Low",
-      });
-
-    const response = await request(app)
-      .get("/api/tasks")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.statusCode).toBe(200);
-    expect(Array.isArray(response.body)).toBe(true);
+import { registerClient, createTask } from "./helpers.js";
+describe("Task API", () => {
+  it("creates, reads, edits, persists board position, archives and deletes", async () => {
+    const { api } = await registerClient();
+    const task = await createTask(api);
+    expect((await api.get("/api/tasks")).body).toHaveLength(1);
+    expect(
+      (await api.put("/api/tasks/" + task._id).send({ title: "Updated" })).body
+        .title,
+    ).toBe("Updated");
+    expect(
+      (
+        await api
+          .patch("/api/tasks/" + task._id + "/state")
+          .send({ state: "Completed", position: 12.5 })
+      ).status,
+    ).toBe(200);
+    const reloaded = await api.get("/api/tasks/" + task._id);
+    expect(reloaded.body).toMatchObject({ state: "Completed", position: 12.5 });
+    await api.patch("/api/tasks/" + task._id + "/state").send({ state: "Completed", position: 0 });
+    expect((await api.get("/api/tasks")).body[0].position).toBe(0);
+    expect(
+      (
+        await api
+          .patch("/api/tasks/" + task._id + "/archive")
+          .send({ archived: true })
+      ).status,
+    ).toBe(200);
+    expect((await api.get("/api/tasks")).body).toHaveLength(0);
+    expect((await api.get("/api/tasks/archived")).body.totalTasks).toBe(1);
+    expect((await api.delete("/api/tasks/" + task._id)).status).toBe(200);
+    expect((await api.get("/api/tasks/" + task._id)).status).toBe(404);
   });
-
-  it("should create a task", async () => {
-    const token = await createUserAndGetToken();
-
-    const response = await request(app)
-      .post("/api/tasks")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        title: "My Task",
-        content: "Task Content",
-        priority: "Low",
-      });
-
-    expect(response.statusCode).toBe(201);
-    expect(response.body.title).toBe("My Task");
+  it("prevents a second user from reading, editing, moving, archiving or deleting a task", async () => {
+    const { api } = await registerClient();
+    const task = await createTask(api);
+    const { api: stranger } = await registerClient();
+    expect((await stranger.get("/api/tasks")).body).toEqual([]);
+    expect((await stranger.get("/api/tasks/" + task._id)).status).toBe(404);
+    expect(
+      (await stranger.put("/api/tasks/" + task._id).send({ title: "Stolen" }))
+        .status,
+    ).toBe(404);
+    expect(
+      (
+        await stranger
+          .patch("/api/tasks/" + task._id + "/state")
+          .send({ state: "Completed" })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await stranger
+          .patch("/api/tasks/" + task._id + "/archive")
+          .send({ archived: true })
+      ).status,
+    ).toBe(404);
+    expect((await stranger.delete("/api/tasks/" + task._id)).status).toBe(404);
   });
-
-  it("should update task state", async () => {
-    const token = await createUserAndGetToken();
-
-    const createdTask = await request(app)
-      .post("/api/tasks")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        title: "Task",
-        content: "Content",
-        priority: "Low",
-      });
-
-    const response = await request(app)
-      .patch(`/api/tasks/${createdTask.body._id}/state`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        state: "In Progress",
-      });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.body.state).toBe("In Progress");
+  it("returns 400 for invalid IDs, state, archive flag, position and query parameters", async () => {
+    const { api } = await registerClient();
+    const task = await createTask(api);
+    expect((await api.get("/api/tasks/not-an-id")).status).toBe(400);
+    for (const body of [
+      {},
+      { state: "Unknown" },
+      { state: "Pending", position: "1" },
+    ]) {
+      expect(
+        (await api.patch("/api/tasks/" + task._id + "/state").send(body))
+          .status,
+      ).toBe(400);
+    }
+    for (const body of [{}, { archived: "false" }, { archived: null }]) {
+      expect(
+        (await api.patch("/api/tasks/" + task._id + "/archive").send(body))
+          .status,
+      ).toBe(400);
+    }
+    expect((await api.get("/api/tasks/archived?limit=999")).status).toBe(400);
+    expect((await api.get("/api/tasks/archived?search[x]=bad")).status).toBe(
+      400,
+    );
   });
-
-  it("should delete task", async () => {
-    const token = await createUserAndGetToken();
-
-    const createdTask = await request(app)
-      .post("/api/tasks")
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        title: "Task",
-        content: "Content",
-        priority: "Low",
-      });
-
-    const response = await request(app)
-      .delete(`/api/tasks/${createdTask.body._id}`)
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.statusCode).toBe(200);
-  });
-
-  it("should not allow another user to delete the task", async () => {
-    const token1 = await createUserAndGetToken();
-    const token2 = await createUserAndGetToken();
-
-    const createdTask = await request(app)
-      .post("/api/tasks")
-      .set("Authorization", `Bearer ${token1}`)
-      .send({
-        title: "Task",
-        content: "Content",
-        priority: "Low",
-      });
-
-    const response = await request(app)
-      .delete(`/api/tasks/${createdTask.body._id}`)
-      .set("Authorization", `Bearer ${token2}`);
-
-    expect(response.statusCode).toBe(404);
+  it("treats search as literal text and clamps an empty last page after deletion", async () => {
+    const { api } = await registerClient();
+    const task = await createTask(api, { title: "Literal [bracket]" });
+    await api
+      .patch("/api/tasks/" + task._id + "/archive")
+      .send({ archived: true });
+    const result = await api.get(
+      "/api/tasks/archived?search=%5B&page=20&limit=1",
+    );
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({
+      currentPage: 1,
+      totalPages: 1,
+      totalTasks: 1,
+    });
+    await api.delete("/api/tasks/" + task._id);
+    expect((await api.get("/api/tasks/archived?page=20")).body).toMatchObject({
+      currentPage: 1,
+      totalTasks: 0,
+    });
   });
 });

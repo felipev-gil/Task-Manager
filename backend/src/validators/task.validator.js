@@ -1,4 +1,48 @@
-import { body } from "express-validator";
+import { body, query } from "express-validator";
+
+export const stateValidation = [
+  body("state")
+    .isString()
+    .isIn(["Pending", "In Progress", "Completed"])
+    .withMessage("Invalid state."),
+  body("position")
+    .optional()
+    .custom(
+      (value) =>
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        Math.abs(value) <= 1e15,
+    )
+    .withMessage("Invalid position."),
+];
+export const archiveValidation = [
+  body("archived")
+    .custom((value) => typeof value === "boolean")
+    .withMessage("Archived must be a boolean."),
+];
+export const archivedQueryValidation = [
+  query()
+    .custom((value) =>
+      Object.keys(value).every((key) =>
+        ["page", "limit", "search"].includes(key),
+      ),
+    )
+    .withMessage("Unknown query parameter."),
+  query("page")
+    .optional()
+    .isInt({ min: 1, max: 100000 })
+    .withMessage("Invalid page."),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 50 })
+    .withMessage("Limit must be between 1 and 50."),
+  query("search")
+    .optional()
+    .isString()
+    .bail()
+    .isLength({ max: 100 })
+    .withMessage("Search must be at most 100 characters."),
+];
 
 export const createTaskValidation = [
   body("title")
