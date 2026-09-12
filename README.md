@@ -1,193 +1,97 @@
 # Task Manager
 
-A full-stack MERN task management application with authentication, drag-and-drop task organization, archiving, pagination, search, rate limiting, and automated testing.
+[![CI](https://github.com/felipev-gil/Task-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/felipev-gil/Task-Manager/actions/workflows/ci.yml)
 
-## Live Demo
+A personal Kanban app built with React and Express: organize tasks, save their board order, and search an archive.
 
-Frontend: https://task-manager-felipev-gil.vercel.app/
+[Existing hosted demo](https://task-manager-felipev-gil.vercel.app/) — the hosted version may differ from this branch until deployment.
+The API is hosted on Render; its readiness URL after this upgrade is /api/health.
 
-Backend API: https://task-manager-pb69.onrender.com/
+![Task board](docs/screenshots/task-board.png)
+![Archived tasks](docs/screenshots/archive.png)
 
-## Features
+## What this project demonstrates
 
-* User authentication with JWT
-* Protected routes
-* Create, update, delete, and archive tasks
-* Kanban board workflow
-* Drag-and-drop task management
-* Archived tasks page
-* Search functionality
-* Pagination
-* Rate limiting
-* Global error handling
-* Backend testing with Jest and Supertest
+- React hooks, Context, routing, forms, request cancellation, and optimistic updates with rollback.
+- Cookie authentication, user-scoped MongoDB queries, body/query validation, and rate limiting.
+- Persistent drag-and-drop ordering within and between workflow columns.
+- Archive search, pagination, restore/delete actions, and accessible form labels.
+- Isolated integration tests, frontend regression tests, browser checks, and GitHub Actions.
 
-## Tech Stack
+## Architecture and decisions
 
-### Frontend
+React pages → custom hooks → API services → Express routes/validators → controllers → Mongoose.
+HTTP concerns stay in services and middleware; reusable UI behavior lives in hooks.
 
-* React
-* Vite
-* React Router
-* Axios
-* Tailwind CSS
-* DaisyUI
-* @hello-pangea/dnd
-* React Hot Toast
-* SweetAlert2
-* Lucide React
+Each task query includes its owner ID. A compound MongoDB index supports user/archive/date filtering.
+Archive search escapes regex syntax and limits query length; it is literal, case-insensitive substring search.
+For larger datasets, use an appropriate search index rather than unbounded substring scans.
 
-### Backend
+Board positions are stored as fractional numbers, so a move updates a single owned task.
+The UI serializes moves and rolls back the affected task on failure. Legacy records receive stable virtual positions when listed.
+Concurrent edits from separate browser tabs use last-write-wins; real-time collaboration, conflict resolution,
+and rank compaction after extreme repeated insertions are future work. The active board currently loads all active tasks.
+Priority is shown on cards; manual board order takes precedence over priority.
 
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* JWT
-* BcryptJS
-* Express Validator
-* Upstash Rate Limiting
+The tenets here are small, explicit modules and verified behavior. This is a portfolio application, not a claim of production certification.
 
-### Testing
+## Requirements and setup
 
-* Jest
-* Supertest
+Use Node.js 24 and pnpm 11.19.0. From the repository root:
 
-## Architecture
-
-```text
-Frontend (Vercel)
-       ↓
-Backend API (Render)
-       ↓
-MongoDB Atlas
+```sh
+pnpm run setup
 ```
 
-## Installation
+For a disposable local demonstration, run these in two terminals:
 
-### Clone Repository
-
-```bash
-git clone https://github.com/felipev-gil/Task-Manager.git
-cd Task-Manager
+```sh
+pnpm --dir backend demo
+pnpm --dir frontend dev
 ```
 
-## Backend Setup
+Open http://localhost:5173. Sign in with **demo@example.test / PortfolioDemo123!**, or register a new account.
+These credentials exist only in the disposable local demo. Its temporary MongoDB is removed when the process stops.
+The first run downloads a MongoDB binary; subsequent runs reuse the cache. No Atlas or Upstash credentials are needed.
 
-```bash
-cd backend
-pnpm install
-```
+For normal development, copy `backend/.env.example` to `backend/.env` and
+`frontend/.env.example` to `frontend/.env`, configure your own MongoDB URI and random JWT secret,
+then run `pnpm --dir backend dev` and `pnpm --dir frontend dev`.
+Generate a secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+The memory rate-limit store is development-only; production requires Upstash.
 
-Create a `.env` file and configure the following variables:
+## Verification
 
-```env
-MONGO_URI=
-
-JWT_SECRET=
-
-CORS_ORIGIN=
-
-UPSTASH_REDIS_REST_URL=
-
-UPSTASH_REDIS_REST_TOKEN=
-```
-
-Start the backend server:
-
-```bash
-pnpm run dev
-```
-
-## Frontend Setup
-
-```bash
-cd frontend
-pnpm install
-```
-
-Create a `.env` file and configure the following variable:
-
-```env
-VITE_API_URL=
-```
-
-For local development:
-
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-Start the frontend application:
-
-```bash
-pnpm run dev
-```
-
-## Running Tests
-
-Backend tests are implemented using Jest and Supertest.
-
-Run all tests:
-
-```bash
-cd backend
+```sh
+pnpm lint
 pnpm test
+pnpm build
+pnpm --dir backend test --runInBand --coverage
+pnpm --dir frontend exec playwright install chromium
+pnpm --dir frontend test:e2e
 ```
 
-## Deployment
+Backend tests create a temporary MongoDB and clean their records between tests. They do not use `MONGO_URI`, deployed data, or Upstash.
+Frontend unit tests cover session expiry and retry recovery.
+Browser tests start disposable local servers; ports 5000 and 5173 must be free.
+CI repeats these checks and uploads coverage and browser reports. A passing local run does not imply a passing remote CI run.
 
-### Frontend
+## Security and deployment
 
-* Hosted on Vercel
-* Automatic deployments through GitHub integration
+Browser sessions use HTTP-only, SameSite=Lax cookies, secure in production, expiring after one day.
+The browser never stores a JWT in localStorage. Existing localStorage tokens are removed, so users sign in again after this upgrade.
+All mutating requests require an exact configured `Origin`, including sign-in and sign-out.
+Passwords use bcrypt with a 72-byte input limit. A stolen cookie remains usable until expiry; immediate server-side revocation and password reset are future work.
 
-Required environment variable:
+Use a **same-origin /api reverse proxy** in production. Do not point the browser directly from a Vercel domain to a Render domain:
+SameSite=Lax cookies intentionally do not support that cross-site setup.
+Set `VITE_API_URL=/api`, `NODE_ENV=production`, `CORS_ORIGIN` to the exact frontend origin,
+`RATE_LIMIT_STORE=upstash`, and configure MongoDB, a strong JWT secret, and both Upstash credentials.
+Set `TRUST_PROXY` only to verified proxy hops or CIDRs for the actual deployment; an overly broad value enables spoofed IPs.
+Health checks use `GET /api/health` and return 503 until MongoDB is connected.
 
-```env
-VITE_API_URL=
-```
-
-### Backend
-
-* Hosted on Render
-* Connected to MongoDB Atlas
-* Automatic deployments through GitHub integration
-
-Required environment variables:
-
-```env
-MONGO_URI=
-
-JWT_SECRET=
-
-CORS_ORIGIN=
-
-UPSTASH_REDIS_REST_URL=
-
-UPSTASH_REDIS_REST_TOKEN=
-```
-
-### Database
-
-* MongoDB Atlas
-
-## Learning Objectives
-
-This project was built to strengthen knowledge and practical experience in:
-
-* React and modern frontend development
-* REST API design
-* Authentication and authorization with JWT
-* MongoDB and Mongoose
-* Custom React Hooks
-* State management with Context API
-* Form validation
-* Error handling
-* API security practices
-* Automated backend testing
-* Full-stack deployment
+[Deployment checklist](docs/DEPLOYMENT.md) · [API reference](docs/API.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 
-MIT
+[MIT](LICENSE)

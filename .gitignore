@@ -1,4 +1,7 @@
 # Logs
+playwright-report/
+test-results/
+.cache/
 logs
 *.log
 npm-debug.log*

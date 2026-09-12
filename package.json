@@ -1,0 +1,14 @@
+{
+  "name": "task-manager",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "setup": "pnpm --dir backend install --frozen-lockfile && pnpm --dir frontend install --frozen-lockfile",
+    "test": "pnpm --dir backend test --runInBand && pnpm --dir frontend test",
+    "build": "pnpm --dir frontend build",
+    "lint": "pnpm --dir frontend lint"
+  }
+}
