@@ -6,6 +6,10 @@ import "./index.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext";
 
+document.documentElement.setAttribute(
+  "data-theme",
+  localStorage.getItem("theme") || "lofi",
+);
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>

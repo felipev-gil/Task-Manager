@@ -15,6 +15,9 @@ const Tasks = () => {
     tasks,
     isLoading,
     isRateLimited,
+    error,
+    retry,
+    isMoving,
     deleteTask,
     archiveTask,
     updateTaskState,
@@ -65,9 +68,18 @@ const Tasks = () => {
   }
 
   if (isRateLimited) {
-    return <RateLimitedUi />;
+    return <RateLimitedUi onRetry={retry} />;
   }
 
+  if (error)
+    return (
+      <div role="alert" className="p-8 text-center">
+        {error}
+        <button onClick={retry} className="btn btn-primary m-4">
+          Retry
+        </button>
+      </div>
+    );
   if (visibleTasks.length === 0) {
     return <TasksNotFound />;
   }
@@ -132,7 +144,6 @@ const Tasks = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              onClick={() => navigate(`/task/${task._id}`)}
                               className={`
                                   p-5
                                   border
@@ -146,7 +157,16 @@ const Tasks = () => {
                                 `}
                             >
                               <div className="flex justify-between items-center">
-                                <h3 className="font-semibold">{task.title}</h3>
+                                <h3 className="font-semibold">
+                                  <button
+                                    className="text-left underline"
+                                    onClick={() =>
+                                      navigate(`/task/${task._id}`)
+                                    }
+                                  >
+                                    {task.title}
+                                  </button>
+                                </h3>
 
                                 <div className="flex flex-row">
                                   <button
@@ -156,6 +176,7 @@ const Tasks = () => {
                                       handleArchive(e, task._id);
                                     }}
                                     aria-label="Archive task"
+                                    disabled={isMoving}
                                     className="btn btn-xs btn-ghost hover:bg-primary-content/20"
                                   >
                                     <ArchiveX className="size-4" />
@@ -168,6 +189,7 @@ const Tasks = () => {
                                       handleDelete(e, task._id);
                                     }}
                                     aria-label="Delete task"
+                                    disabled={isMoving}
                                     className="btn btn-xs btn-ghost hover:bg-primary-content/20"
                                   >
                                     <Trash2 className="size-4" />
@@ -175,6 +197,9 @@ const Tasks = () => {
                                 </div>
                               </div>
                               <p>{task.content}</p>
+                              <p className="text-sm mt-2">
+                                {task.priority} priority
+                              </p>
                             </div>
                           )}
                         </Draggable>

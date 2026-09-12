@@ -7,6 +7,7 @@ import { handleApiError } from "../utils/handleApiError";
 
 export const useTaskForm = ({ taskId, onDeleteConfirm }) => {
   const navigate = useNavigate();
+  const [loadError, setLoadError] = useState(null);
 
   const [task, setTask] = useState({
     title: "",
@@ -19,10 +20,12 @@ export const useTaskForm = ({ taskId, onDeleteConfirm }) => {
 
   useEffect(() => {
     if (!taskId) return;
+    let active = true;
 
     const fetchTask = async () => {
       try {
         const res = await taskService.getTaskById(taskId);
+        if (!active) return;
 
         setTask({
           title: res.title,
@@ -31,13 +34,21 @@ export const useTaskForm = ({ taskId, onDeleteConfirm }) => {
           _id: res._id,
         });
       } catch (error) {
-        handleApiError(error, "Failed to fetch task");
+        if (active)
+          setLoadError(
+            error.response?.status === 404
+              ? "Task not found."
+              : "Couldn't load this task. Please go back and retry.",
+          );
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     fetchTask();
+    return () => {
+      active = false;
+    };
   }, [taskId, setIsLoading]);
 
   const updateField = (field, value) => {
@@ -48,6 +59,7 @@ export const useTaskForm = ({ taskId, onDeleteConfirm }) => {
   };
 
   const saveTask = async () => {
+    if (isSaving || loadError) return;
     const title = task.title.trim();
     const content = task.content.trim();
 
@@ -103,6 +115,7 @@ export const useTaskForm = ({ taskId, onDeleteConfirm }) => {
 
     isLoading,
     isSaving,
+    loadError,
 
     saveTask,
     deleteTask,

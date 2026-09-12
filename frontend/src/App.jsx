@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoaderIcon } from "lucide-react";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/auth";
 import NavBar from "./components/system/NavBar";
 import Home from "./pages/system/Home";
 import Login from "./pages/auth/Login";
@@ -14,7 +14,7 @@ import NotFound from "./pages/system/NotFound";
 import Footer from "./components/system/Footer";
 
 const AppContent = () => {
-  const { user, loading, error } = useAuth();
+  const { user, loading, error, retry } = useAuth();
 
   if (loading) {
     return (
@@ -25,7 +25,14 @@ const AppContent = () => {
   }
 
   if (!user && !loading && error) {
-    return <div className="p-4 text-error">{error}</div>;
+    return (
+      <div className="p-8 text-center" role="alert">
+        <p>{error}</p>
+        <button className="btn btn-primary mt-4" onClick={retry}>
+          Retry connection
+        </button>
+      </div>
+    );
   }
 
   return (

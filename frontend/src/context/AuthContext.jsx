@@ -1,74 +1,65 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
 import * as authService from "../services/auth.service";
-import { useApiState } from "../hooks/useApiState";
-
-const AuthContext = createContext(null);
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
-
+import { AuthContext } from "./auth";
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-
-  const { isLoading, setIsLoading, error, setError } = useApiState(true);
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    const fetchInitialUser = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await authService.getMe();
-
-        setUser(userData);
-
-        setError(null);
-      } catch {
-        setError("Session expired or failed to load user data.");
-
-        localStorage.removeItem("token");
-
+    let active = true;
+    // Remove legacy browser-readable credentials during the cookie migration.
+    localStorage.removeItem("token");
+    const expired = () => {
+      if (active) {
         setUser(null);
-      } finally {
-        setIsLoading(false);
+        setError(null);
       }
     };
-
-    fetchInitialUser();
-  }, [setError, setIsLoading]);
-
-  const saveUser = (userData, token) => {
-    localStorage.setItem("token", token);
-
-    setUser(userData);
-
+    window.addEventListener("session-expired", expired);
+    authService
+      .getMe()
+      .then((data) => {
+        if (active) {
+          setUser(data);
+          setError(null);
+        }
+      })
+      .catch((failure) => {
+        if (active) {
+          setUser(null);
+          setError(
+            failure.response?.status === 401
+              ? null
+              : "We couldn't connect to the server. Please retry.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      window.removeEventListener("session-expired", expired);
+    };
+  }, [attempt]);
+  const saveUser = (data) => {
+    setUser(data);
     setError(null);
   };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-
+  const retry = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setAttempt((n) => n + 1);
+  }, []);
+  const handleLogout = async () => {
+    await authService.logout();
     setUser(null);
-
     setError(null);
   };
-
   return (
     <AuthContext.Provider
-      value={{
-        user,
-
-        loading: isLoading,
-        error,
-
-        saveUser,
-        handleLogout,
-      }}
+      value={{ user, loading, error, saveUser, handleLogout, retry }}
     >
       {children}
     </AuthContext.Provider>

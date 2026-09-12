@@ -1,13 +1,14 @@
 import api from "../utils/axios";
 
-export const getTasks = async () => {
-  const res = await api.get("/tasks");
+export const getTasks = async (signal) => {
+  const res = await api.get("/tasks", { signal });
   return res.data;
 };
 
-export const getArchivedTasks = async (params) => {
+export const getArchivedTasks = async (params, signal) => {
   const res = await api.get("/tasks/archived", {
     params,
+    signal,
   });
   return res.data;
 };
@@ -27,8 +28,8 @@ export const updateTask = async (id, taskData) => {
   return res.data;
 };
 
-export const updateTaskState = async (id, state) => {
-  const res = await api.patch(`/tasks/${id}/state`, { state });
+export const updateTaskState = async (id, state, position) => {
+  const res = await api.patch(`/tasks/${id}/state`, { state, position });
   return res.data;
 };
 

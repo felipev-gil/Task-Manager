@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowLeftIcon } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import * as authService from "../../services/auth.service";
 import { handleApiError } from "../../utils/handleApiError";
 
 const Register = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { saveUser, error: authError } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -24,13 +25,17 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const userData = await authService.register(formData);
-      saveUser(userData, userData.token);
+      saveUser(userData);
       toast.success("Registered successfully!");
       navigate("/");
     } catch (error) {
       handleApiError(error, "Registration failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -108,6 +113,8 @@ const Register = () => {
                 </label>
                 <input
                   id="register-password"
+                  minLength={8}
+                  maxLength={72}
                   type="password"
                   name="password"
                   value={formData.password}
@@ -119,8 +126,11 @@ const Register = () => {
                 />
               </div>
 
-              <button className="w-full btn btn-primary btn-lg mt-5">
-                Register
+              <button
+                disabled={isSubmitting}
+                className="w-full btn btn-primary btn-lg mt-5"
+              >
+                {isSubmitting ? "Registering..." : "Register"}
               </button>
             </fieldset>
           </form>

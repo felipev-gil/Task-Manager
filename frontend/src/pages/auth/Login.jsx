@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowLeftIcon } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import * as authService from "../../services/auth.service";
 import { handleApiError } from "../../utils/handleApiError";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { saveUser, error: authError } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -24,13 +25,17 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const userData = await authService.login(formData);
-      saveUser(userData, userData.token);
+      saveUser(userData);
       toast.success("Logged in successfully!");
       navigate("/tasks");
     } catch (error) {
       handleApiError(error, "Failed to log in");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -83,8 +88,11 @@ const Login = () => {
                 />
               </div>
 
-              <button className="w-full btn btn-primary btn-lg mt-5">
-                Login
+              <button
+                disabled={isSubmitting}
+                className="w-full btn btn-primary btn-lg mt-5"
+              >
+                {isSubmitting ? "Signing in..." : "Login"}
               </button>
             </fieldset>
           </form>

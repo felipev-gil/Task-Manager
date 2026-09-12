@@ -7,16 +7,23 @@ const Update = () => {
   const { id } = useParams();
   const confirm = useConfirm();
 
-  const { task, updateField, isLoading, isSaving, saveTask, deleteTask } =
-    useTaskForm({
-      taskId: id,
-      onDeleteConfirm: () =>
-        confirm({
-          title: "Are you sure?",
-          icon: "error",
-          confirmText: "Yes, delete it!",
-        }),
-    });
+  const {
+    task,
+    updateField,
+    isLoading,
+    isSaving,
+    loadError,
+    saveTask,
+    deleteTask,
+  } = useTaskForm({
+    taskId: id,
+    onDeleteConfirm: () =>
+      confirm({
+        title: "Are you sure?",
+        icon: "error",
+        confirmText: "Yes, delete it!",
+      }),
+  });
 
   if (isLoading) {
     return (
@@ -26,6 +33,15 @@ const Update = () => {
     );
   }
 
+  if (loadError)
+    return (
+      <div role="alert" className="p-8 text-center">
+        {loadError}
+        <Link to="/tasks" className="btn btn-primary m-4">
+          Back to Tasks
+        </Link>
+      </div>
+    );
   return (
     <div className="flex justify-center w-full pt-15">
       <div className="bg-secondary-content p-12 max-w-lg w-full rounded-lg shadow-md shadow-current text-center">
@@ -54,6 +70,8 @@ const Update = () => {
 
                 <input
                   id="edit-title"
+                  maxLength={50}
+                  required
                   type="text"
                   value={task.title}
                   onChange={(e) => updateField("title", e.target.value)}
@@ -69,6 +87,8 @@ const Update = () => {
 
                 <textarea
                   id="edit-content"
+                  maxLength={300}
+                  required
                   value={task.content}
                   onChange={(e) => updateField("content", e.target.value)}
                   placeholder="Write your task here..."

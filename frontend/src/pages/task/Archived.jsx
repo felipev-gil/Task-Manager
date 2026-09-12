@@ -17,6 +17,8 @@ const Archived = () => {
     tasks,
     isLoading,
     isRateLimited,
+    error,
+    retry,
     page,
     setPage,
     totalPages,
@@ -67,9 +69,18 @@ const Archived = () => {
   }
 
   if (isRateLimited) {
-    return <RateLimitedUi />;
+    return <RateLimitedUi onRetry={retry} />;
   }
 
+  if (error)
+    return (
+      <div role="alert" className="p-8 text-center">
+        {error}
+        <button onClick={retry} className="btn btn-primary m-4">
+          Retry
+        </button>
+      </div>
+    );
   return (
     <div className="min-h-screen px-6 py-8">
       <div className="max-w-7xl mx-auto">
@@ -88,6 +99,7 @@ const Archived = () => {
           <div className="flex justify-end mb-6">
             <input
               id="search"
+              aria-label="Search archived tasks"
               type="text"
               autoFocus
               placeholder="Search tasks..."

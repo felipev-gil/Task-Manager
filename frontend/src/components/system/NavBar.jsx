@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Menu } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import ThemeSelector from "./ThemeSelector";
 
 const NavBar = () => {
@@ -11,10 +11,15 @@ const NavBar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { user, handleLogout } = useAuth();
 
-  const handleLogoutClick = () => {
+  const handleLogoutClick = async () => {
+    try {
+      await handleLogout();
+    } catch {
+      toast.error("Couldn't sign out. Please retry.");
+      return;
+    }
     setDrawerOpen(false);
     toast.success("Successfully logged out.");
-    handleLogout();
     navigate("/", { replace: true });
   };
 
@@ -74,6 +79,8 @@ const NavBar = () => {
           <div className="flex-none lg:hidden">
             <button
               id="openMenu"
+              aria-label="Open menu"
+              aria-expanded={drawerOpen}
               onClick={() => setDrawerOpen((prev) => !prev)}
               className="btn btn-square btn-ghost"
             >
@@ -91,6 +98,7 @@ const NavBar = () => {
           onClick={() => setDrawerOpen(false)}
         />
         <ul className="menu bg-base-200 min-h-full w-67 p-4 pt-6">
+          <li><button className="btn btn-ghost" onClick={() => setDrawerOpen(false)} aria-label="Close menu">Close menu</button></li>
           <li className="text-2xl font-bold text-primary items-center">Menu</li>
           {user && (
             <>

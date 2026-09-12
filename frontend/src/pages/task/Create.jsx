@@ -33,6 +33,8 @@ const Create = () => {
 
                 <input
                   id="task-title"
+                  maxLength={50}
+                  required
                   type="text"
                   value={task.title}
                   onChange={(e) => updateField("title", e.target.value)}
@@ -48,6 +50,8 @@ const Create = () => {
 
                 <textarea
                   id="task-content"
+                  maxLength={300}
+                  required
                   value={task.content}
                   onChange={(e) => updateField("content", e.target.value)}
                   placeholder="Write your task content here..."
